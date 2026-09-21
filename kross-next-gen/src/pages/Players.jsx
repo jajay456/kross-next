@@ -6,12 +6,14 @@ import PlayerList from "../components/PlayerList";
 import PlayerProfile from "../components/profile/PlayerProfile";
 import AddPlayerModal from "../components/AddPlayerModal";
 import AddUpdateModal from "../components/AddUpdateModal";
+import EditPlanModal from "../components/EditPlanModal";
 
-export default function Players({ players, onAddPlayer, onEditPlayer, onAddAssessment, onAddClass, onAddNote }) {
+export default function Players({ players, onAddPlayer, onEditPlayer, onEditPlan, onAddAssessment, onAddClass, onAddNote }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(false);
+  const [editingPlan, setEditingPlan] = useState(false);
   const [addingUpdate, setAddingUpdate] = useState(null);
 
   const selected = players.find((p) => p.id === id) ?? null;
@@ -34,6 +36,7 @@ export default function Players({ players, onAddPlayer, onEditPlayer, onAddAsses
             player={selected}
             onBack={() => navigate("/players")}
             onEdit={() => setEditingPlayer(true)}
+            onEditPlan={() => setEditingPlan(true)}
             onAddUpdate={() => setAddingUpdate("assessment")}
             onAddAssessment={() => setAddingUpdate("assessment")}
             onAddClass={() => setAddingUpdate("class")}
@@ -49,13 +52,24 @@ export default function Players({ players, onAddPlayer, onEditPlayer, onAddAsses
       />
 
       <AddPlayerModal
-        key={selected?.id ?? "none"}
+        key={`edit-player-${selected?.id ?? "none"}`}
         open={editingPlayer}
         initialData={selected}
         onClose={() => setEditingPlayer(false)}
         onSubmit={(data) => {
           onEditPlayer(selected.id, data);
           setEditingPlayer(false);
+        }}
+      />
+
+      <EditPlanModal
+        key={`edit-plan-${selected?.id ?? "none"}`}
+        open={editingPlan}
+        plan={selected?.developmentPlan}
+        onClose={() => setEditingPlan(false)}
+        onSubmit={(data) => {
+          onEditPlan(selected.id, data);
+          setEditingPlan(false);
         }}
       />
 

@@ -1,4 +1,4 @@
-import { Plus, Star, Calendar, FileText } from "lucide-react";
+import { Plus, Star, Calendar, FileText, Pencil } from "lucide-react";
 import ProfileHeader from "./ProfileHeader";
 import PlanBox from "./PlanBox";
 import AssessmentPanel from "./AssessmentPanel";
@@ -8,6 +8,7 @@ export default function PlayerProfile({
   player,
   onBack,
   onEdit,
+  onEditPlan,
   onAddUpdate,
   onAddAssessment,
   onAddClass,
@@ -24,22 +25,32 @@ export default function PlayerProfile({
   const plan = player.developmentPlan;
 
   return (
-    <div className="w-full">
+    <div className="w-full @container">
       <ProfileHeader player={player} onBack={onBack} onEdit={onEdit} />
 
       <div className="flex flex-col gap-7 px-5 py-6 sm:px-7">
         <section>
-          <h2 className="mb-4 text-sm font-bold tracking-wide">DEVELOPMENT PLAN</h2>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-sm font-bold tracking-wide">DEVELOPMENT PLAN</h2>
+            <button
+              type="button"
+              onClick={onEditPlan}
+              className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 transition hover:text-ink"
+            >
+              <Pencil size={12} />
+              Edit
+            </button>
+          </div>
+          <div className="grid grid-cols-1 gap-3 @lg:grid-cols-3">
             <PlanBox label="CURRENT FOCUS" items={plan.currentFocus} />
             <PlanBox label="NEXT 4 WEEKS" items={plan.next4Weeks} />
             <PlanBox label="LONG TERM GOAL" text={plan.longTermGoal} />
           </div>
         </section>
 
-        <section className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:divide-x lg:divide-neutral-100">
+        <section className="grid grid-cols-1 gap-7 @lg:grid-cols-2 @lg:divide-x @lg:divide-neutral-100">
           <AssessmentPanel assessment={player.assessmentHistory[0]} />
-          <div className="lg:pl-7">
+          <div className="@lg:pl-7">
             <ClassesPanel classes={player.recentClasses} />
           </div>
         </section>

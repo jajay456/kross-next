@@ -9,6 +9,8 @@ import Notes from './pages/Notes'
 import Admin from './pages/Admin'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
+import Register from './pages/Register'
+import ForgotPassword from './pages/ForgotPassword'
 
   const today = () =>
   new Date().toLocaleDateString("en-GB", {
@@ -54,6 +56,14 @@ function App() {
     ))
   }
 
+  const editPlan = (playerId, data) => {
+    setPlayers(prev => prev.map(p =>
+      p.id === playerId
+        ? { ...p, developmentPlan: { ...p.developmentPlan, ...data }, lastUpdate: today() }
+        : p
+    ))
+  }
+
   const addClass = (playerId, data) => {
     setPlayers(prev => prev.map(p =>
       p.id !== playerId
@@ -87,8 +97,10 @@ function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/players" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/players" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onAddAssessment={addAssessment} onAddClass={addClass} onAddNote={addNote} />} />
-        <Route path="/players/:id" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onAddAssessment={addAssessment} onAddClass={addClass} onAddNote={addNote} />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/players" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onEditPlan={editPlan} onAddAssessment={addAssessment} onAddClass={addClass} onAddNote={addNote} />} />
+        <Route path="/players/:id" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onEditPlan={editPlan} onAddAssessment={addAssessment} onAddClass={addClass} onAddNote={addNote} />} />
         <Route path="/assessments" element={<Assessments players={players} onAddAssessment={addAssessment} />} />
         <Route path="/assessments/:id" element={<Assessments players={players} onAddAssessment={addAssessment} />} />
         <Route path="/classes" element={<Classes players={players} />} />
