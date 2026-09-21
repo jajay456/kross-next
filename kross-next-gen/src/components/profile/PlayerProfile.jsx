@@ -30,7 +30,7 @@ export default function PlayerProfile({ player, onBack, onEdit }) {
         </section>
 
         <section className="grid grid-cols-1 gap-7 lg:grid-cols-2 lg:divide-x lg:divide-neutral-100">
-          <AssessmentPanel assessment={player.latestAssessment} />
+          <AssessmentPanel assessment={player.assessmentHistory[0]} />
           <div className="lg:pl-7">
             <ClassesPanel classes={player.recentClasses} />
           </div>
