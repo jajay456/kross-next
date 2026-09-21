@@ -4,7 +4,15 @@ import PlanBox from "./PlanBox";
 import AssessmentPanel from "./AssessmentPanel";
 import ClassesPanel from "./ClassesPanel";
 
-export default function PlayerProfile({ player, onBack, onEdit }) {
+export default function PlayerProfile({
+  player,
+  onBack,
+  onEdit,
+  onAddUpdate,
+  onAddAssessment,
+  onAddClass,
+  onAddNote,
+}) {
   if (!player) {
     return (
       <div className="hidden h-full w-full items-center justify-center text-sm text-neutral-400 lg:flex">
@@ -38,6 +46,7 @@ export default function PlayerProfile({ player, onBack, onEdit }) {
 
         <section className="flex flex-col gap-3">
           <button
+            onClick={onAddUpdate}
             className="flex items-center justify-center gap-2 rounded-xl bg-lime py-4
                        text-sm font-bold tracking-wide text-ink transition hover:brightness-95"
           >
@@ -46,9 +55,24 @@ export default function PlayerProfile({ player, onBack, onEdit }) {
           </button>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <QuickAction Icon={Star} title="Add Assessment" subtitle="Evaluate player performance" />
-            <QuickAction Icon={Calendar} title="Add Training/Class" subtitle="Record a training session" />
-            <QuickAction Icon={FileText} title="Add Note" subtitle="Add coach note or comment" />
+            <QuickAction
+              Icon={Star}
+              title="Add Assessment"
+              subtitle="Evaluate player performance"
+              onClick={onAddAssessment}
+            />
+            <QuickAction
+              Icon={Calendar}
+              title="Add Training/Class"
+              subtitle="Record a training session"
+              onClick={onAddClass}
+            />
+            <QuickAction
+              Icon={FileText}
+              title="Add Note"
+              subtitle="Add coach note or comment"
+              onClick={onAddNote}
+            />
           </div>
         </section>
       </div>
@@ -56,9 +80,10 @@ export default function PlayerProfile({ player, onBack, onEdit }) {
   );
 }
 
-function QuickAction({ Icon, title, subtitle }) {
+function QuickAction({ Icon, title, subtitle, onClick }) {
   return (
     <button
+      onClick={onClick}
       className="flex items-center gap-3 rounded-xl border border-neutral-200 p-4
                  text-left transition hover:border-neutral-400 hover:bg-neutral-50"
     >

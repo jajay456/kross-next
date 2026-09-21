@@ -26,7 +26,7 @@ function App() {
       ...data,
       ...structuredClone(EMPTY_PLAYER_EXTRAS),
       id: `player_${crypto.randomUUID().slice(0, 8)}`,
-      image: "",
+      image: data.image || "",
       memberSince: today(),
       lastUpdate: today(),
     };
@@ -48,13 +48,47 @@ function App() {
     ))
   }
 
+  const editPlayer = (playerId, data) => {
+    setPlayers(prev => prev.map(p =>
+      p.id === playerId ? { ...p, ...data, lastUpdate: today() } : p
+    ))
+  }
+
+  const addClass = (playerId, data) => {
+    setPlayers(prev => prev.map(p =>
+      p.id !== playerId
+        ? p
+        : {
+            ...p,
+            recentClasses: [
+              { id: `class_${crypto.randomUUID().slice(0, 8)}`, ...data },
+              ...p.recentClasses,
+            ],
+          }
+    ))
+  }
+
+  const addNote = (playerId, data) => {
+    setPlayers(prev => prev.map(p =>
+      p.id !== playerId
+        ? p
+        : {
+            ...p,
+            notes: [
+              { id: `note_${crypto.randomUUID().slice(0, 8)}`, ...data },
+              ...p.notes,
+            ],
+          }
+    ))
+  }
+
   return (
     <>
       <Routes>
         <Route path="/" element={<Navigate to="/players" replace />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/players" element={<Players players={players} onAddPlayer={addPlayer} />} />
-        <Route path="/players/:id" element={<Players players={players} onAddPlayer={addPlayer} />} />
+        <Route path="/players" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onAddAssessment={addAssessment} onAddClass={addClass} onAddNote={addNote} />} />
+        <Route path="/players/:id" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onAddAssessment={addAssessment} onAddClass={addClass} onAddNote={addNote} />} />
         <Route path="/assessments" element={<Assessments players={players} onAddAssessment={addAssessment} />} />
         <Route path="/assessments/:id" element={<Assessments players={players} onAddAssessment={addAssessment} />} />
         <Route path="/classes" element={<Classes players={players} />} />

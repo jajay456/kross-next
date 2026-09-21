@@ -165,6 +165,7 @@ export const PLAYERS = [
 ];
 
 export const LEVELS = ["NG1", "NG2", "NG3", "NG4", "NG5", "NG6"];
+export const CLASS_TYPES = ["Match Play", "Technical", "Tactical", "Physical", "Group Class", "Intro Class"];
 export const CLASSES = ["Academy", "Team", "Advanced", "Elite"];
 export const COACHES = ["Roberto", "Lau", "Kiril"];
 
