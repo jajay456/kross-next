@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { X, Star, Calendar, FileText } from "lucide-react";
-import { ASSESSMENT_FIELDS, CLASS_TYPES, COACHES } from "../data/players";
+import { useAuth } from "../context/AuthContext";
+import { useLists } from "../context/ListsContext";
+import { ASSESSMENT_FIELDS, COACHES } from "../data/players";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -10,22 +12,22 @@ const TABS = [
   { key: "note", label: "Note", subtitle: "Add comment", Icon: FileText },
 ];
 
-const initialAssessmentForm = () => ({
+const initialAssessmentForm = (coach) => ({
   date: today(),
-  coach: COACHES[0],
+  coach,
   coachComment: "",
   ...Object.fromEntries(ASSESSMENT_FIELDS.map((f) => [f.key, 0])),
 });
 
-const initialClassForm = () => ({
-  className: CLASS_TYPES[0],
-  coach: COACHES[0],
+const initialClassForm = (coach, classType) => ({
+  className: classType,
+  coach,
   duration: 60,
   date: today(),
 });
 
-const initialNoteForm = () => ({
-  coach: COACHES[0],
+const initialNoteForm = (coach) => ({
+  coach,
   text: "",
   date: today(),
 });
@@ -38,17 +40,21 @@ export default function AddUpdateModal({
   onAddClass,
   onAddNote,
 }) {
+  const { profile } = useAuth();
+  const { classTypes } = useLists();
+  const myName = profile?.name || COACHES[0];
+
   const [tab, setTab] = useState(initialTab);
-  const [assessmentForm, setAssessmentForm] = useState(initialAssessmentForm);
-  const [classForm, setClassForm] = useState(initialClassForm);
-  const [noteForm, setNoteForm] = useState(initialNoteForm);
+  const [assessmentForm, setAssessmentForm] = useState(() => initialAssessmentForm(myName));
+  const [classForm, setClassForm] = useState(() => initialClassForm(myName, classTypes[0]));
+  const [noteForm, setNoteForm] = useState(() => initialNoteForm(myName));
 
   if (!open) return null;
 
   const close = () => {
-    setAssessmentForm(initialAssessmentForm());
-    setClassForm(initialClassForm());
-    setNoteForm(initialNoteForm());
+    setAssessmentForm(initialAssessmentForm(myName));
+    setClassForm(initialClassForm(myName, classTypes[0]));
+    setNoteForm(initialNoteForm(myName));
     onClose();
   };
 
@@ -126,19 +132,9 @@ export default function AddUpdateModal({
                 </label>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-neutral-500">Coach</span>
-                  <select
-                    value={assessmentForm.coach}
-                    onChange={(e) =>
-                      setAssessmentForm((p) => ({ ...p, coach: e.target.value }))
-                    }
-                    className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
-                  >
-                    {COACHES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
+                    {assessmentForm.coach}
+                  </p>
                 </label>
               </div>
 
@@ -196,7 +192,7 @@ export default function AddUpdateModal({
                   onChange={(e) => setClassForm((p) => ({ ...p, className: e.target.value }))}
                   className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
                 >
-                  {CLASS_TYPES.map((c) => (
+                  {classTypes.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -207,17 +203,9 @@ export default function AddUpdateModal({
               <div className="grid grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-neutral-500">Coach</span>
-                  <select
-                    value={classForm.coach}
-                    onChange={(e) => setClassForm((p) => ({ ...p, coach: e.target.value }))}
-                    className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
-                  >
-                    {COACHES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                  <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
+                    {classForm.coach}
+                  </p>
                 </label>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold text-neutral-500">Duration (min)</span>
@@ -248,17 +236,9 @@ export default function AddUpdateModal({
             <div className="mt-6 flex flex-col gap-4">
               <label className="flex flex-col gap-1.5">
                 <span className="text-xs font-semibold text-neutral-500">Coach</span>
-                <select
-                  value={noteForm.coach}
-                  onChange={(e) => setNoteForm((p) => ({ ...p, coach: e.target.value }))}
-                  className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
-                >
-                  {COACHES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                <p className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-600">
+                  {noteForm.coach}
+                </p>
               </label>
 
               <label className="flex flex-col gap-1.5">

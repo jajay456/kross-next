@@ -1,8 +1,17 @@
-import { ArrowLeft, Pencil, User, Calendar } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, User, Calendar } from "lucide-react";
 import Avatar from "../Avatar";
 import Badge from "../ui/Badge";
+import { useAuth } from "../../context/AuthContext";
 
-export default function ProfileHeader({ player, onBack, onEdit }) {
+export default function ProfileHeader({ player, onBack, onEdit, onDelete }) {
+  const { canManage } = useAuth();
+
+  const handleDelete = () => {
+    if (window.confirm(`Delete ${player.name}? This will remove all of their data and cannot be undone.`)) {
+      onDelete();
+    }
+  };
+
   return (
     <div className="border-b border-neutral-200 px-5 pt-5 pb-6 sm:px-7">
       <div className="flex items-center justify-between">
@@ -15,18 +24,31 @@ export default function ProfileHeader({ player, onBack, onEdit }) {
           Back to players
         </button>
 
-        <button
-          onClick={onEdit}
-          className="flex items-center gap-2 rounded-xl bg-ink px-4 py-2
-                     text-sm font-medium text-white transition hover:bg-neutral-700"
-        >
-          <Pencil size={14} />
-          Edit
-        </button>
+        {canManage && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDelete}
+              aria-label="Delete player"
+              className="flex items-center gap-2 rounded-xl border border-rose-200 px-4 py-2
+                         text-sm font-medium text-rose-600 transition hover:bg-rose-50"
+            >
+              <Trash2 size={14} />
+              Delete
+            </button>
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-2 rounded-xl bg-ink px-4 py-2
+                         text-sm font-medium text-white transition hover:bg-neutral-700"
+            >
+              <Pencil size={14} />
+              Edit
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-        <Avatar name={player.name} src={player.image} size="lg" />
+        <Avatar name={player.name} src={player.image} size="xl" />
 
         <div className="min-w-0">
           <h1 className="truncate text-3xl font-bold tracking-tight">{player.name}</h1>

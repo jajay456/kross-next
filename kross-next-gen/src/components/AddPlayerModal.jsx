@@ -1,32 +1,105 @@
-import { useRef, useState } from "react";
-import { X, Camera } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Camera, Search } from "lucide-react";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "../firebase";
 import Avatar from "./Avatar";
-import { LEVELS, CLASSES, COACHES } from "../data/players";
+import { COACHES } from "../data/players";
+import { resizeImageToDataUrl } from "../utils/image";
+import { useAuth } from "../context/AuthContext";
+import { useLists } from "../context/ListsContext";
 
-const initialForm = { name: "", level: LEVELS[0], class: CLASSES[0], coach: COACHES[0], image: "" };
+const makeInitialForm = (levels, classes) => ({
+  name: "",
+  level: levels[0],
+  class: classes[0],
+  coach: COACHES[0],
+  image: "",
+});
 
 export default function AddPlayerModal({ open, initialData, onClose, onSubmit }) {
-  const [form, setForm] = useState(initialData ?? initialForm);
+  const { isAdmin } = useAuth();
+  const { levels, classes } = useLists();
+  const [form, setForm] = useState(initialData ?? (() => makeInitialForm(levels, classes)));
   const isEditing = Boolean(initialData);
+  const restrictedEdit = isEditing && !isAdmin;
   const fileInputRef = useRef(null);
+
+  const [coachNames, setCoachNames] = useState([]);
+  useEffect(() => {
+    const q = query(collection(db, "users"), where("role", "in", ["coach", "admin"]));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCoachNames(snapshot.docs.map((d) => d.data().name).filter(Boolean));
+    });
+    return unsubscribe;
+  }, []);
+  const coachOptions = coachNames.length ? coachNames : COACHES;
+
+  const [candidateUsers, setCandidateUsers] = useState([]);
+  useEffect(() => {
+    if (!isAdmin) return;
+    const roles = isEditing ? ["user", "player"] : ["user"];
+    const q = query(collection(db, "users"), where("role", "in", roles));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setCandidateUsers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+    });
+    return unsubscribe;
+  }, [isAdmin, isEditing]);
+
+  const [userSearch, setUserSearch] = useState("");
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+  // Seed the linker with the player's existing linked account, once it loads.
+  useEffect(() => {
+    if (!isEditing || !isAdmin || !initialData?.linkedUserId || userSearch) return;
+    const linked = candidateUsers.find((u) => u.id === initialData.linkedUserId);
+    if (linked) {
+      setForm((prev) => ({ ...prev, userId: linked.id }));
+      setUserSearch(`${linked.name} (${linked.email})`);
+    }
+  }, [isEditing, isAdmin, initialData, candidateUsers, userSearch]);
 
   if (!open) return null;
 
   const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
-  const handleImageChange = (e) => {
+  const filteredCandidates = (() => {
+    const q = userSearch.trim().toLowerCase();
+    if (!q) return candidateUsers;
+    return candidateUsers.filter(
+      (u) => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+    );
+  })();
+
+  const handlePickUser = (picked) => {
+    setForm((prev) => ({
+      ...prev,
+      userId: picked.id,
+      name: picked.name || "",
+      image: picked.image || prev.image,
+    }));
+    setUserSearch(`${picked.name} (${picked.email})`);
+    setUserDropdownOpen(false);
+  };
+
+  const handleManualEntry = () => {
+    setForm((prev) => ({ ...prev, userId: undefined, name: "" }));
+    setUserSearch("");
+    setUserDropdownOpen(false);
+  };
+
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm((prev) => ({ ...prev, image: reader.result }));
-    reader.readAsDataURL(file);
+    const image = await resizeImageToDataUrl(file);
+    setForm((prev) => ({ ...prev, image }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
     onSubmit(form);
-    setForm(initialForm);
+    setForm(makeInitialForm(levels, classes));
+    setUserSearch("");
   };
 
   return (
@@ -55,15 +128,17 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
           <div className="flex items-center gap-4">
             <div className="relative shrink-0">
               <Avatar name={form.name || "?"} src={form.image} size="lg" />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                aria-label="Change photo"
-                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center
-                           rounded-full bg-ink text-white ring-2 ring-white transition hover:bg-neutral-700"
-              >
-                <Camera size={13} />
-              </button>
+              {!restrictedEdit && (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  aria-label="Change photo"
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center
+                             rounded-full bg-ink text-white ring-2 ring-white transition hover:bg-neutral-700"
+                >
+                  <Camera size={13} />
+                </button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -72,10 +147,68 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
                 className="hidden"
               />
             </div>
-            <p className="text-xs text-neutral-500">
-              Click the camera icon to {form.image ? "change" : "add"} a photo.
-            </p>
+            {!restrictedEdit && (
+              <p className="text-xs text-neutral-500">
+                Click the camera icon to {form.image ? "change" : "add"} a photo.
+              </p>
+            )}
           </div>
+
+          {isAdmin && (
+            <label className="relative flex flex-col gap-1.5">
+              <span className="text-xs font-semibold text-neutral-500">
+                {isEditing ? "Linked user account" : "Link a registered user (optional)"}
+              </span>
+              <div className="flex items-center gap-2 rounded-lg border border-neutral-300 px-2 py-2 focus-within:border-ink">
+                <Search size={15} className="shrink-0 text-neutral-400" />
+                <input
+                  value={userSearch}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    setUserDropdownOpen(true);
+                    if (form.userId) setForm((prev) => ({ ...prev, userId: undefined }));
+                  }}
+                  onFocus={() => setUserDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setUserDropdownOpen(false), 120)}
+                  placeholder="Search registered users by name or email..."
+                  className="w-full text-sm outline-none placeholder:text-neutral-400"
+                />
+              </div>
+
+              {userDropdownOpen && (
+                <div className="absolute top-full z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg">
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={handleManualEntry}
+                    className="block w-full px-3 py-2 text-left text-sm text-neutral-500 hover:bg-neutral-50"
+                  >
+                    — Enter name manually —
+                  </button>
+                  {filteredCandidates.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handlePickUser(u)}
+                      className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
+                        form.userId === u.id ? "bg-lime-soft" : ""
+                      }`}
+                    >
+                      {u.name} <span className="text-neutral-400">({u.email})</span>
+                    </button>
+                  ))}
+                  {filteredCandidates.length === 0 && (
+                    <p className="px-3 py-2 text-xs text-neutral-400">
+                      {candidateUsers.length === 0
+                        ? "No registered users available to link yet."
+                        : "No matching users."}
+                    </p>
+                  )}
+                </div>
+              )}
+            </label>
+          )}
 
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-semibold text-neutral-500">Name</span>
@@ -83,8 +216,10 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
               value={form.name}
               onChange={update("name")}
               required
+              readOnly={restrictedEdit || Boolean(form.userId)}
               placeholder="Player name"
-              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-ink"
+              className="rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-ink
+                         read-only:bg-neutral-50 read-only:text-neutral-500"
             />
           </label>
 
@@ -96,7 +231,7 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
                 onChange={update("level")}
                 className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
               >
-                {LEVELS.map((l) => (
+                {levels.map((l) => (
                   <option key={l} value={l}>{l}</option>
                 ))}
               </select>
@@ -109,7 +244,7 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
                 onChange={update("class")}
                 className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
               >
-                {CLASSES.map((c) => (
+                {classes.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
@@ -122,7 +257,7 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
                 onChange={update("coach")}
                 className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
               >
-                {COACHES.map((c) => (
+                {coachOptions.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>

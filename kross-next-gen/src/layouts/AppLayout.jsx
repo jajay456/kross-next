@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
-export default function AppLayout({ sidebar, list, detail,mobileView="list" }) {
+export default function AppLayout({ sidebar, list, detail,mobileView="list", fullWidthList=false }) {
     const show = (name) => (mobileView === name ? "flex" : "hidden");
     const [navOpen, setNavOpen] = useState(false);
 
     return (
         <div className="h-[100vh] bg-ink p-0 sm:p-4">
             <div
-                className="relative flex h-full flex-col overflow-hidden bg-white sm:rounded-2xl
+                className={`relative flex h-full flex-col overflow-hidden bg-white sm:rounded-2xl
                 md:grid md:grid-cols-[220px_minmax(0,1fr)]
-
-            lg:grid-cols-[220px_340px_minmax(0,1fr)]"
+                ${fullWidthList ? "" : "lg:grid-cols-[220px_340px_minmax(0,1fr)]"}`}
             >
               <div className="flex items-center gap-3 border-b border-neutral-200 px-4 py-3 md:hidden">
                 <button
@@ -54,11 +53,13 @@ export default function AppLayout({ sidebar, list, detail,mobileView="list" }) {
                 {list}
             </div>
 
-            <main
-                className={`${show("detail")} min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:flex`}
-            >
-                {detail}
-            </main>
+            {!fullWidthList && (
+                <main
+                    className={`${show("detail")} min-h-0 min-w-0 flex-1 flex-col overflow-y-auto lg:flex`}
+                >
+                    {detail}
+                </main>
+            )}
           </div>
         </div>
     );

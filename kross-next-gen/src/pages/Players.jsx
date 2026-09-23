@@ -7,14 +7,16 @@ import PlayerProfile from "../components/profile/PlayerProfile";
 import AddPlayerModal from "../components/AddPlayerModal";
 import AddUpdateModal from "../components/AddUpdateModal";
 import EditPlanModal from "../components/EditPlanModal";
+import EditEntryModal from "../components/EditEntryModal";
 
-export default function Players({ players, onAddPlayer, onEditPlayer, onEditPlan, onAddAssessment, onAddClass, onAddNote }) {
+export default function Players({ players, onAddPlayer, onEditPlayer, onDeletePlayer, onEditPlan, onAddAssessment, onEditAssessment, onDeleteAssessment, onAddClass, onEditClass, onDeleteClass, onAddNote }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(false);
   const [editingPlan, setEditingPlan] = useState(false);
   const [addingUpdate, setAddingUpdate] = useState(null);
+  const [editingEntry, setEditingEntry] = useState(null);
 
   const selected = players.find((p) => p.id === id) ?? null;
 
@@ -36,10 +38,16 @@ export default function Players({ players, onAddPlayer, onEditPlayer, onEditPlan
             player={selected}
             onBack={() => navigate("/players")}
             onEdit={() => setEditingPlayer(true)}
+            onDelete={() => {
+              onDeletePlayer(selected.id);
+              navigate("/players");
+            }}
             onEditPlan={() => setEditingPlan(true)}
             onAddUpdate={() => setAddingUpdate("assessment")}
             onAddAssessment={() => setAddingUpdate("assessment")}
+            onEditAssessment={(a) => setEditingEntry({ type: "assessment", data: a })}
             onAddClass={() => setAddingUpdate("class")}
+            onEditClass={(c) => setEditingEntry({ type: "class", data: c })}
             onAddNote={() => setAddingUpdate("note")}
           />
         }
@@ -89,6 +97,22 @@ export default function Players({ players, onAddPlayer, onEditPlayer, onEditPlan
         onAddNote={(data) => {
           onAddNote(selected.id, data);
           setAddingUpdate(null);
+        }}
+      />
+
+      <EditEntryModal
+        key={editingEntry ? `${editingEntry.type}-${editingEntry.data.id}` : "none"}
+        open={Boolean(editingEntry)}
+        type={editingEntry?.type}
+        initialData={editingEntry?.data}
+        onClose={() => setEditingEntry(null)}
+        onSave={(data) => {
+          if (editingEntry.type === "assessment") onEditAssessment(selected.id, data);
+          else onEditClass(selected.id, data);
+        }}
+        onDelete={(id) => {
+          if (editingEntry.type === "assessment") onDeleteAssessment(selected.id, id);
+          else onDeleteClass(selected.id, id);
         }}
       />
     </>

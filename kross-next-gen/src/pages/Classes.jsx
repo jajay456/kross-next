@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AppLayout from "../layouts/AppLayout";
 import Sidebar from "../components/Sidebar";
 import ClassesPanel from "../components/profile/ClassesPanel";
 import ClassPlayerList from "../components/ClassPlayerList";
+import EditEntryModal from "../components/EditEntryModal";
 
-export default function Classes({ players }) {
+export default function Classes({ players, onEditClass, onDeleteClass }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [editing, setEditing] = useState(null);
 
   const selected = players.find((p) => p.id === id) ?? null;
 
@@ -23,6 +26,7 @@ export default function Classes({ players }) {
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
+    <>
     <AppLayout
       mobileView={id ? "detail" : "list"}
       sidebar={<Sidebar />}
@@ -51,11 +55,25 @@ export default function Classes({ players }) {
               </h2>
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-7">
-              <ClassesPanel classes={selected.recentClasses} />
+              <ClassesPanel
+                classes={selected.recentClasses}
+                onEdit={(c) => setEditing(c)}
+              />
             </div>
           </div>
         )
       }
     />
+
+      <EditEntryModal
+        key={editing?.id ?? "none"}
+        open={Boolean(editing)}
+        type="class"
+        initialData={editing}
+        onClose={() => setEditing(null)}
+        onSave={(data) => onEditClass(selected.id, data)}
+        onDelete={(id) => onDeleteClass(selected.id, id)}
+      />
+    </>
   );
 }

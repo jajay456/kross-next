@@ -1,25 +1,24 @@
-import { Swords, Wrench, Shield, Activity } from "lucide-react";
+import { Pencil } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useLists } from "../../context/ListsContext";
+import { CLASS_TYPE_STYLE_MAP, FALLBACK_STYLE } from "../../data/classIcons";
 
-const ICONS = {
-  "Match Play": { Icon: Swords, color: "bg-amber-50 text-amber-600" },
-  Technical: { Icon: Wrench, color: "bg-emerald-50 text-emerald-600" },
-  Tactical: { Icon: Shield, color: "bg-rose-50 text-rose-600" },
-  Physical: { Icon: Activity, color: "bg-sky-50 text-sky-600" },
-};
+export default function ClassesPanel({ classes = [], onEdit, limit }) {
+  const { profile, canManage } = useAuth();
+  const { classTypeIcons } = useLists();
+  const visibleClasses = limit ? classes.slice(0, limit) : classes;
 
-const FALLBACK = { Icon: Activity, color: "bg-neutral-100 text-neutral-500" };
-
-export default function ClassesPanel({ classes = [] }) {
   return (
     <div>
       <h2 className="mb-4 text-sm font-bold tracking-wide">RECENT CLASSES</h2>
 
-      {classes.length === 0 ? (
-        <p className="py-6 text-sm text-neutral-400">ยังไม่มีคลาส</p>
+      {visibleClasses.length === 0 ? (
+        <p className="py-6 text-sm text-neutral-400">No classes yet</p>
       ) : (
         <ul className="divide-y divide-neutral-100">
-          {classes.map((c) => {
-            const { Icon, color } = ICONS[c.className] ?? FALLBACK;
+          {visibleClasses.map((c) => {
+            const { Icon, color } = CLASS_TYPE_STYLE_MAP[classTypeIcons?.[c.className]] ?? FALLBACK_STYLE;
+            const canEdit = onEdit && canManage && c.coach === profile?.name;
             return (
               <li key={c.id} className="flex items-center gap-3 py-3">
                 <span
@@ -39,6 +38,16 @@ export default function ClassesPanel({ classes = [] }) {
                 <span className="w-24 shrink-0 text-right text-xs text-neutral-500">
                   {c.date}
                 </span>
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={() => onEdit(c)}
+                    aria-label="Edit class"
+                    className="shrink-0 text-neutral-400 transition hover:text-ink"
+                  >
+                    <Pencil size={13} />
+                  </button>
+                )}
               </li>
             );
           })}

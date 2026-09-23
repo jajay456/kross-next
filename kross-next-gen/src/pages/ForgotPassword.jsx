@@ -1,19 +1,30 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import logoMark from "../assets/logo-mark.png";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const { resetPassword } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email) {
       setError("Please enter your email.");
       return;
     }
     setError("");
+    setSubmitting(true);
+    const result = await resetPassword(email);
+    setSubmitting(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
     setSent(true);
   };
 
@@ -21,6 +32,7 @@ export default function ForgotPassword() {
     <div className="flex min-h-screen items-center justify-center bg-ink px-4">
       <div className="w-full max-w-sm rounded-2xl bg-panel p-8">
         <div className="mb-8 text-center">
+          <img src={logoMark} alt="" className="mx-auto mb-3 h-12 w-12" />
           <p className="text-2xl font-extrabold tracking-tight text-white">KROSS</p>
           <p className="text-2xl font-extrabold tracking-tight text-lime">NEXT GEN</p>
           <p className="mt-1 text-[10px] tracking-[0.2em] text-neutral-400 uppercase">
@@ -32,7 +44,7 @@ export default function ForgotPassword() {
           <div className="flex flex-col items-center gap-4 text-center">
             <p className="text-sm text-neutral-300">
               If an account exists for <span className="font-semibold text-white">{email}</span>,
-              we've sent a password reset link (demo).
+              we've sent a password reset link.
             </p>
             <Link
               to="/login"
@@ -65,10 +77,11 @@ export default function ForgotPassword() {
 
               <button
                 type="submit"
+                disabled={submitting}
                 className="mt-2 rounded-xl bg-lime py-3 text-sm font-bold tracking-wide text-ink
-                           transition hover:brightness-95"
+                           transition hover:brightness-95 disabled:opacity-60"
               >
-                Send Reset Link
+                {submitting ? "Sending..." : "Send Reset Link"}
               </button>
             </form>
 

@@ -5,11 +5,12 @@ import AppLayout from "../layouts/AppLayout";
 import Sidebar from "../components/Sidebar";
 import AssessmentList from "../components/AssessmentList";
 import AssessmentPlayerList from "../components/AssessmentPlayerList";
+import EditEntryModal from "../components/EditEntryModal";
 
-export default function Assessments({ players, onAddAssessment }) {
+export default function Assessments({ players, onAddAssessment, onEditAssessment, onDeleteAssessment, onAddAssessmentComment, onDeleteAssessmentComment }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null);
 
   const selected = players.find((p) => p.id === id) ?? null;
 
@@ -55,11 +56,30 @@ export default function Assessments({ players, onAddAssessment }) {
                 </h2>
               </div>
               <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-7">
-                <AssessmentList assessments={selected.assessmentHistory} />
+                <AssessmentList
+                  assessments={selected.assessmentHistory}
+                  onEdit={(a) => setEditing(a)}
+                  onAddComment={(assessmentId, data) =>
+                    onAddAssessmentComment(selected.id, assessmentId, data)
+                  }
+                  onDeleteComment={(assessmentId, commentId) =>
+                    onDeleteAssessmentComment(selected.id, assessmentId, commentId)
+                  }
+                />
               </div>
             </div>
           )
         }
+      />
+
+      <EditEntryModal
+        key={editing?.id ?? "none"}
+        open={Boolean(editing)}
+        type="assessment"
+        initialData={editing}
+        onClose={() => setEditing(null)}
+        onSave={(data) => onEditAssessment(selected.id, data)}
+        onDelete={(id) => onDeleteAssessment(selected.id, id)}
       />
     </>
   );

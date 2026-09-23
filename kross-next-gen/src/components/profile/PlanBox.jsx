@@ -7,7 +7,7 @@ export default function PlanBox({ label, items, text }) {
 
       {text !== undefined ? (
         <p className="text-sm leading-relaxed text-neutral-800">
-          {text || <span className="text-neutral-400">ยังไม่มีข้อมูล</span>}
+          {text || <span className="text-neutral-400">No data yet</span>}
         </p>
       ) : items?.length ? (
         <ul className="flex flex-col gap-1.5">
@@ -19,7 +19,7 @@ export default function PlanBox({ label, items, text }) {
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-neutral-400">no data</p>
+        <p className="text-sm text-neutral-400">No data yet</p>
       )}
     </div>
   );

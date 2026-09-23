@@ -1,34 +1,47 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Mail, Shield, Pencil, Camera, Lock } from "lucide-react";
 import AppLayout from "../layouts/AppLayout";
 import Sidebar from "../components/Sidebar";
 import Avatar from "../components/Avatar";
 import Badge from "../components/ui/Badge";
-import { CURRENT_USER } from "../data/users";
+import { useAuth } from "../context/AuthContext";
+import { resizeImageToDataUrl } from "../utils/image";
 
 export default function Profile() {
+  const { profile, updateUserProfile, changePassword } = useAuth();
   const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(CURRENT_USER.name);
-  const [image, setImage] = useState(CURRENT_USER.image);
+  const [name, setName] = useState(profile?.name || "");
+  const [image, setImage] = useState(profile?.image || "");
+  const [saveError, setSaveError] = useState("");
   const fileInputRef = useRef(null);
 
-  const handleImageChange = (e) => {
+  useEffect(() => {
+    if (!editing) {
+      setName(profile?.name || "");
+      setImage(profile?.image || "");
+    }
+  }, [profile, editing]);
+
+  const handleImageChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setImage(reader.result);
-    reader.readAsDataURL(file);
+    setImage(await resizeImageToDataUrl(file));
   };
 
-  const handleSave = () => {
-    CURRENT_USER.name = name;
-    CURRENT_USER.image = image;
+  const handleSave = async () => {
+    setSaveError("");
+    const result = await updateUserProfile({ name, image });
+    if (!result.ok) {
+      setSaveError(result.error);
+      return;
+    }
     setEditing(false);
   };
 
   const handleCancel = () => {
-    setName(CURRENT_USER.name);
-    setImage(CURRENT_USER.image);
+    setName(profile?.name || "");
+    setImage(profile?.image || "");
+    setSaveError("");
     setEditing(false);
   };
 
@@ -50,7 +63,7 @@ export default function Profile() {
     setChangingPassword(false);
   };
 
-  const handleSavePassword = () => {
+  const handleSavePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       setPasswordError("Please fill in all fields.");
       return;
@@ -63,9 +76,14 @@ export default function Profile() {
       setPasswordError("New password and confirmation do not match.");
       return;
     }
+    const result = await changePassword(currentPassword, newPassword);
+    if (!result.ok) {
+      setPasswordError(result.error);
+      return;
+    }
     resetPasswordFields();
     setChangingPassword(false);
-    window.alert("Password changed (demo)");
+    window.alert("Password changed.");
   };
 
   return (
@@ -122,21 +140,23 @@ export default function Profile() {
                                text-xl font-bold tracking-tight outline-none focus:border-ink"
                   />
                 ) : (
-                  <p className="truncate text-xl font-bold tracking-tight">{CURRENT_USER.name}</p>
+                  <p className="truncate text-xl font-bold tracking-tight">{profile?.name}</p>
                 )}
-                <p className="truncate text-sm text-neutral-500">{CURRENT_USER.title}</p>
+                <p className="truncate text-sm text-neutral-500">{profile?.title}</p>
               </div>
             </div>
+
+            {saveError && <p className="mt-3 text-sm text-rose-600">{saveError}</p>}
 
             <div className="mt-6 flex flex-col gap-3">
               <div className="flex items-center gap-3 rounded-xl bg-neutral-50 p-4">
                 <Mail size={16} className="text-neutral-400" />
-                <span className="text-sm text-neutral-800">{CURRENT_USER.email}</span>
+                <span className="text-sm text-neutral-800">{profile?.email}</span>
               </div>
               <div className="flex items-center gap-3 rounded-xl bg-neutral-50 p-4">
                 <Shield size={16} className="text-neutral-400" />
-                <Badge tone={CURRENT_USER.role === "admin" ? "lime" : "outline"}>
-                  {CURRENT_USER.role}
+                <Badge tone={profile?.role === "admin" ? "lime" : "outline"}>
+                  {profile?.role}
                 </Badge>
               </div>
             </div>

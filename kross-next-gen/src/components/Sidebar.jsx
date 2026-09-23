@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { User, CalendarCheck, ClipboardList, FileText, ChevronDown, Shield, LogOut } from 'lucide-react'
-import { CURRENT_USER } from '../data/users'
+import { User, CalendarCheck, ClipboardList, FileText, ChevronDown, Shield, Settings, LogOut } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import logoMark from '../assets/logo-mark.png'
+import Avatar from './Avatar'
 
 const NAV = [
 { to: "/players", label: "Players", icon: <User size={16} /> },
@@ -13,27 +15,38 @@ const NAV = [
 export default function Sidebar() {
     const navigate = useNavigate()
     const [menuOpen, setMenuOpen] = useState(false)
+    const { profile, isAdmin, logout } = useAuth()
 
     const goTo = (path) => {
         setMenuOpen(false)
         navigate(path)
     }
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
         setMenuOpen(false)
+        await logout()
         navigate("/login")
     }
 
     return (
         <div className="flex h-full flex-col p-3">
-            <div className="px-3 py-5">
+            <button
+                type="button"
+                onClick={() => goTo("/players")}
+                className="flex items-center gap-2.5 rounded-lg px-3 py-5 text-left transition hover:bg-panel-hover/50"
+            >
+                <img src={logoMark} alt="" className="h-8 w-8 shrink-0" />
+                <div>
                 <p className="text-lg leading-tight font-exterabold tracking-tight text-white">
                     KROSS
                 </p>
                 <p className="text-lg leading-tight font-exterabold tracking-tight text-lime">
                     NEXT GEN
                 </p>
-                <p className="mt-0.5 text-[10px] tracking-[0.2em] text-neutral-400 uppercase">
+                </div>
+            </button>
+            <div className="px-3">
+                <p className="text-[10px] tracking-[0.2em] text-neutral-400 uppercase">
                     PADEL ACADEMY
                 </p>
             </div>
@@ -71,7 +84,7 @@ export default function Sidebar() {
                                 Profile
                             </button>
 
-                            {CURRENT_USER.role === "admin" && (
+                            {isAdmin && (
                                 <button
                                     type="button"
                                     onClick={() => goTo("/admin")}
@@ -80,6 +93,18 @@ export default function Sidebar() {
                                 >
                                     <Shield size={16} />
                                     Manage Users
+                                </button>
+                            )}
+
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => goTo("/settings")}
+                                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm
+                                               text-neutral-200 transition hover:bg-white/5 hover:text-white"
+                                >
+                                    <Settings size={16} />
+                                    Manage Options
                                 </button>
                             )}
 
@@ -102,17 +127,12 @@ export default function Sidebar() {
                     className="flex w-full items-center gap-3 rounded-xl bg-panel-hover p-2.5
                             text-left transition hover:bg-neutral-700"
                 >
-                    <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full
-                                bg-lime text-xs font-bold text-ink"
-                    >
-                    RC
-                    </span>
+                    <Avatar name={profile?.name} src={profile?.image} size="sm" />
                     <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium text-white">
-                        {CURRENT_USER.name}
+                        {profile?.name || "Loading..."}
                     </span>
-                    <span className="block truncate text-xs text-neutral-400">{CURRENT_USER.title}</span>
+                    <span className="block truncate text-xs text-neutral-400">{profile?.title}</span>
                     </span>
                     <ChevronDown size={16} className="shrink-0 text-neutral-400" />
                 </button>

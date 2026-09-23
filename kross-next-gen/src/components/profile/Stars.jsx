@@ -17,7 +17,7 @@ export default function Stars({ value = 0, max = 5, onChange }) {
         );
 
         return editable ? (
-          <button key={n} onClick={() => onChange(n)} aria-label={`${n} ดาว`}>
+          <button key={n} onClick={() => onChange(n)} aria-label={`${n} stars`}>
             {icon}
           </button>
         ) : (
