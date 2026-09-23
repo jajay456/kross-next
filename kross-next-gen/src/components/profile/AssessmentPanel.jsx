@@ -24,7 +24,12 @@ export default function AssessmentPanel({ assessment, onEdit, onAddComment, onDe
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-bold tracking-wide">{title}</h2>
+        <div className="flex min-w-0 items-baseline gap-2">
+          <h2 className="text-sm font-bold tracking-wide">{title}</h2>
+          {assessment.coach && (
+            <span className="truncate text-xs text-neutral-500">by {assessment.coach}</span>
+          )}
+        </div>
         <div className="flex shrink-0 items-center gap-3">
           <span className="whitespace-nowrap text-xs text-neutral-500">{assessment.date || "—"}</span>
           {canEdit && (
