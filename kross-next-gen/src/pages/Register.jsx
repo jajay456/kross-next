@@ -56,7 +56,7 @@ export default function Register() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Roberto Coach"
+              placeholder="User name"
               className="rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white
                          outline-none placeholder:text-neutral-500 focus:border-lime"
             />
@@ -68,7 +68,7 @@ export default function Register() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@krossnextgen.app"
+              placeholder="ex@email.com"
               className="rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white
                          outline-none placeholder:text-neutral-500 focus:border-lime"
             />
