@@ -1,6 +1,6 @@
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { collection, deleteDoc, doc, getDocs, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 import { db } from './firebase'
 import { useAuth } from './context/AuthContext'
 import Players from './pages/Players'
@@ -62,8 +62,29 @@ function App() {
 
   const playerRef = (id) => doc(db, 'players', id);
 
+  // Linking a player never demotes an existing coach/admin — only a plain
+  // "user" account gets promoted to "player". Reverting only resets the role
+  // back if it's still "player" (i.e. our own promotion did it), so a coach/
+  // admin who was linked without a role change never gets downgraded.
+  const promoteLinkedUserIfPlain = async (userId, userRole) => {
+    if (!userId || userRole !== 'user') return;
+    await updateDoc(doc(db, 'users', userId), { role: 'player' }).catch((error) =>
+      console.error('Failed to update linked user role:', error)
+    );
+  };
+
+  const revertLinkedUserRoleIfPlayer = async (userId) => {
+    if (!userId) return;
+    const snap = await getDoc(doc(db, 'users', userId));
+    if (snap.exists() && snap.data().role === 'player') {
+      await updateDoc(doc(db, 'users', userId), { role: 'user' }).catch((error) =>
+        console.error('Failed to revert linked user role:', error)
+      );
+    }
+  };
+
   const addPlayer = async (data) => {
-    const { userId, ...playerData } = data;
+    const { userId, userRole, ...playerData } = data;
     const newPlayer = {
       ...playerData,
       ...structuredClone(EMPTY_PLAYER_EXTRAS),
@@ -74,11 +95,7 @@ function App() {
       lastUpdate: today(),
     };
     await setDoc(playerRef(newPlayer.id), newPlayer);
-    if (userId) {
-      await updateDoc(doc(db, 'users', userId), { role: 'player' }).catch((error) =>
-        console.error('Failed to update linked user role:', error)
-      );
-    }
+    await promoteLinkedUserIfPlain(userId, userRole);
     navigate(`/players/${newPlayer.id}`);
   };
 
@@ -94,7 +111,7 @@ function App() {
   };
 
   const editPlayer = async (playerId, data) => {
-    const { userId, ...playerData } = data;
+    const { userId, userRole, ...playerData } = data;
     const updates = { ...playerData, lastUpdate: today() };
 
     if ('userId' in data) {
@@ -104,16 +121,8 @@ function App() {
       updates.linkedUserId = nextLinkedUserId;
 
       if (previousLinkedUserId !== nextLinkedUserId) {
-        if (previousLinkedUserId) {
-          await updateDoc(doc(db, 'users', previousLinkedUserId), { role: 'user' }).catch((error) =>
-            console.error('Failed to revert previous linked user role:', error)
-          );
-        }
-        if (nextLinkedUserId) {
-          await updateDoc(doc(db, 'users', nextLinkedUserId), { role: 'player' }).catch((error) =>
-            console.error('Failed to update linked user role:', error)
-          );
-        }
+        await revertLinkedUserRoleIfPlayer(previousLinkedUserId);
+        await promoteLinkedUserIfPlain(nextLinkedUserId, userRole);
       }
     }
 
@@ -123,11 +132,7 @@ function App() {
   const deletePlayer = async (playerId) => {
     const player = players.find((p) => p.id === playerId);
     await deleteDoc(playerRef(playerId));
-    if (player?.linkedUserId) {
-      await updateDoc(doc(db, 'users', player.linkedUserId), { role: 'user' }).catch((error) =>
-        console.error('Failed to revert linked user role:', error)
-      );
-    }
+    await revertLinkedUserRoleIfPlayer(player?.linkedUserId);
   };
 
   const editAssessment = async (playerId, data) => {

@@ -25,9 +25,10 @@ export default function NotesPanel({ notes = [], onEdit, onAddComment, onDeleteC
                     type="button"
                     onClick={() => onEdit(n)}
                     aria-label="Edit note"
-                    className="normal-case text-neutral-400 transition hover:text-ink"
+                    className="-m-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                               normal-case text-neutral-400 transition hover:bg-neutral-200 hover:text-ink"
                   >
-                    <Pencil size={12} />
+                    <Pencil size={13} />
                   </button>
                 )}
               </span>
@@ -81,9 +82,10 @@ function NoteDiscussion({ note, onAddComment, onDeleteComment, canManage, profil
                         type="button"
                         onClick={() => onDeleteComment(note.id, c.id)}
                         aria-label="Delete comment"
-                        className="text-neutral-400 transition hover:text-rose-600"
+                        className="-m-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                                   text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600"
                       >
-                        <X size={12} />
+                        <X size={14} />
                       </button>
                     )}
                   </span>

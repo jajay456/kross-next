@@ -43,9 +43,10 @@ export default function ClassesPanel({ classes = [], onEdit, limit }) {
                     type="button"
                     onClick={() => onEdit(c)}
                     aria-label="Edit class"
-                    className="shrink-0 text-neutral-400 transition hover:text-ink"
+                    className="-m-1.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full
+                               text-neutral-400 transition hover:bg-neutral-100 hover:text-ink"
                   >
-                    <Pencil size={13} />
+                    <Pencil size={14} />
                   </button>
                 )}
               </li>

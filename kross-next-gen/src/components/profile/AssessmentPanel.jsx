@@ -82,9 +82,10 @@ export default function AssessmentPanel({ assessment, onEdit, onAddComment, onDe
                             type="button"
                             onClick={() => onDeleteComment(c.id)}
                             aria-label="Delete comment"
-                            className="text-neutral-400 transition hover:text-rose-600"
+                            className="-m-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                                       text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600"
                           >
-                            <X size={12} />
+                            <X size={14} />
                           </button>
                         )}
                       </span>

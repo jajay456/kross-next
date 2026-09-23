@@ -17,11 +17,15 @@ const makeInitialForm = (levels, classes) => ({
 });
 
 export default function AddPlayerModal({ open, initialData, onClose, onSubmit }) {
-  const { isAdmin } = useAuth();
+  const { isAdmin, canManage } = useAuth();
   const { levels, classes } = useLists();
   const [form, setForm] = useState(initialData ?? (() => makeInitialForm(levels, classes)));
   const isEditing = Boolean(initialData);
   const restrictedEdit = isEditing && !isAdmin;
+  // Linking a user account changes their role, which requires admin rights once
+  // a player already exists (edit mode) — but any coach can link when creating a
+  // brand new player, since the role change there is just "user" -> "player".
+  const canUseLinker = isAdmin || (canManage && !isEditing);
   const fileInputRef = useRef(null);
 
   const [coachNames, setCoachNames] = useState([]);
@@ -36,27 +40,31 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
 
   const [candidateUsers, setCandidateUsers] = useState([]);
   useEffect(() => {
-    if (!isAdmin) return;
-    const roles = isEditing ? ["user", "player"] : ["user"];
-    const q = query(collection(db, "users"), where("role", "in", roles));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setCandidateUsers(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+    if (!canUseLinker) return;
+    // Any registered account can be linked to a player (including existing
+    // coaches who also want a player profile for their own training) except
+    // admins — linking never changes a role away from coach, only "user"
+    // gets promoted to "player".
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      setCandidateUsers(
+        snapshot.docs.map((d) => ({ id: d.id, ...d.data() })).filter((u) => u.role !== "admin")
+      );
     });
     return unsubscribe;
-  }, [isAdmin, isEditing]);
+  }, [canUseLinker]);
 
   const [userSearch, setUserSearch] = useState("");
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Seed the linker with the player's existing linked account, once it loads.
   useEffect(() => {
-    if (!isEditing || !isAdmin || !initialData?.linkedUserId || userSearch) return;
+    if (!isEditing || !canUseLinker || !initialData?.linkedUserId || userSearch) return;
     const linked = candidateUsers.find((u) => u.id === initialData.linkedUserId);
     if (linked) {
-      setForm((prev) => ({ ...prev, userId: linked.id }));
+      setForm((prev) => ({ ...prev, userId: linked.id, userRole: linked.role }));
       setUserSearch(`${linked.name} (${linked.email})`);
     }
-  }, [isEditing, isAdmin, initialData, candidateUsers, userSearch]);
+  }, [isEditing, canUseLinker, initialData, candidateUsers, userSearch]);
 
   if (!open) return null;
 
@@ -74,15 +82,16 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
     setForm((prev) => ({
       ...prev,
       userId: picked.id,
+      userRole: picked.role,
       name: picked.name || "",
-      image: picked.image || prev.image,
+      image: picked.image || "",
     }));
     setUserSearch(`${picked.name} (${picked.email})`);
     setUserDropdownOpen(false);
   };
 
   const handleManualEntry = () => {
-    setForm((prev) => ({ ...prev, userId: undefined, name: "" }));
+    setForm((prev) => ({ ...prev, userId: undefined, userRole: undefined, name: "" }));
     setUserSearch("");
     setUserDropdownOpen(false);
   };
@@ -154,7 +163,7 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
             )}
           </div>
 
-          {isAdmin && (
+          {canUseLinker && (
             <label className="relative flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-neutral-500">
                 {isEditing ? "Linked user account" : "Link a registered user (optional)"}
@@ -191,11 +200,18 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handlePickUser(u)}
-                      className={`block w-full px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
+                      className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-50 ${
                         form.userId === u.id ? "bg-lime-soft" : ""
                       }`}
                     >
-                      {u.name} <span className="text-neutral-400">({u.email})</span>
+                      <span className="truncate">
+                        {u.name} <span className="text-neutral-400">({u.email})</span>
+                      </span>
+                      {u.role && (
+                        <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium uppercase text-neutral-500">
+                          {u.role}
+                        </span>
+                      )}
                     </button>
                   ))}
                   {filteredCandidates.length === 0 && (
