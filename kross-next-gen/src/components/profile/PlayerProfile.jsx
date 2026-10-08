@@ -26,7 +26,7 @@ export default function PlayerProfile({
         Select a player from the list
       </div>
     );
-  } 
+  }
 
   const plan = player.developmentPlan;
 
