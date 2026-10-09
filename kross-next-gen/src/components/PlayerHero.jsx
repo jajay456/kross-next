@@ -94,7 +94,7 @@ export default function PlayerHero({ players, onSelect }) {
 
 function CardFace({ player, tint, back = false }) {
   return (
-    <span className={`hero-face ${back ? "hero-face-back" : ""} block h-full w-full overflow-hidden rounded-lg bg-neutral-900 shadow-2xl ring-1 ring-white/10`}>
+    <span className={`hero-face ${back ? "hero-face-back" : ""} block h-full w-full overflow-hidden rounded-lg bg-neutral-900 shadow-lg ring-1 ring-white/10`}>
       {player.image ? (
         <img src={player.image} alt="" className="h-full w-full object-cover" draggable={false} />
       ) : (
