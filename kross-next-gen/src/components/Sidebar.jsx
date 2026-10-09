@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { User, CalendarCheck, ClipboardList, FileText, ChevronDown, Shield, Settings, LogOut } from 'lucide-react'
+import { User, CalendarCheck, ClipboardList, FileText, ChevronDown, Shield, Settings, LogOut, LogIn, Users } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import logoMark from '../assets/logo-mark.png'
 import Avatar from './Avatar'
@@ -15,7 +15,7 @@ const NAV = [
 export default function Sidebar() {
     const navigate = useNavigate()
     const [menuOpen, setMenuOpen] = useState(false)
-    const { profile, isAdmin, logout } = useAuth()
+    const { user, profile, isAdmin, canManage, logout } = useAuth()
 
     const goTo = (path) => {
         setMenuOpen(false)
@@ -32,6 +32,7 @@ export default function Sidebar() {
         <div className="flex h-full flex-col p-3">
             <button
                 type="button"
+                data-home
                 onClick={() => goTo("/players")}
                 className="flex items-center gap-2.5 rounded-lg px-3 py-5 text-left transition hover:bg-panel-hover/50"
             >
@@ -69,6 +70,19 @@ export default function Sidebar() {
                 ))}
             </nav>
 
+            {!user ? (
+            <div className="mt-auto">
+                <button
+                    type="button"
+                    onClick={() => navigate("/login")}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-lime px-3 py-2.5
+                               text-sm font-semibold text-ink transition hover:opacity-90"
+                >
+                    <LogIn size={16} />
+                    Coach Login
+                </button>
+            </div>
+            ) : (
             <div className="relative mt-auto">
                 {menuOpen && (
                     <>
@@ -83,6 +97,18 @@ export default function Sidebar() {
                                 <User size={16} />
                                 Profile
                             </button>
+
+                            {canManage && (
+                                <button
+                                    type="button"
+                                    onClick={() => goTo("/manage-players")}
+                                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm
+                                               text-neutral-200 transition hover:bg-white/5 hover:text-white"
+                                >
+                                    <Users size={16} />
+                                    Manage Players
+                                </button>
+                            )}
 
                             {isAdmin && (
                                 <button
@@ -137,6 +163,7 @@ export default function Sidebar() {
                     <ChevronDown size={16} className="shrink-0 text-neutral-400" />
                 </button>
             </div>
+            )}
         </div>
     )
 }

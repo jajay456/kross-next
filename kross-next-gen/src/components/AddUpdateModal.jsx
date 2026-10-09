@@ -73,11 +73,11 @@ export default function AddUpdateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={close} />
+      <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={close} />
 
       <form
         onSubmit={handleSubmit}
-        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="relative z-10 animate-pop-in flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
         <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-5">
           <h2 className="text-lg font-bold tracking-tight">Add Update</h2>

@@ -2,12 +2,14 @@ import { ArrowLeft, Pencil, Trash2, User, Calendar } from "lucide-react";
 import Avatar from "../Avatar";
 import Badge from "../ui/Badge";
 import { useAuth } from "../../context/AuthContext";
+import { useConfirm } from "../../context/ConfirmContext";
 
 export default function ProfileHeader({ player, onBack, onEdit, onDelete }) {
   const { canManage } = useAuth();
+  const confirm = useConfirm();
 
-  const handleDelete = () => {
-    if (window.confirm(`Delete ${player.name}? This will remove all of their data and cannot be undone.`)) {
+  const handleDelete = async () => {
+    if (await confirm(`Delete ${player.name}? This will remove all of their data and cannot be undone.`)) {
       onDelete();
     }
   };

@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Pencil, Send, X } from "lucide-react";
+import { Pencil, Send } from "lucide-react";
 import Stars from "./Stars";
+import CommentThread from "../CommentThread";
+import Avatar from "../Avatar";
 import { ASSESSMENT_FIELDS } from "../../data/players";
 import { useAuth } from "../../context/AuthContext";
 import { formatDateTime } from "../../utils/datetime";
 
 export default function AssessmentPanel({ assessment, onEdit, onAddComment, onDeleteComment, title = "LATEST ASSESSMENT" }) {
-  const { profile, canManage } = useAuth();
+  const { user, profile, canManage } = useAuth();
   const canEdit = onEdit && canManage && assessment.coach === profile?.name;
   const [commentText, setCommentText] = useState("");
 
@@ -14,6 +16,7 @@ export default function AssessmentPanel({ assessment, onEdit, onAddComment, onDe
     e.preventDefault();
     if (!commentText.trim()) return;
     onAddComment(assessment.id, {
+      authorId: user.uid,
       author: profile?.name || "Unknown",
       text: commentText.trim(),
       date: formatDateTime(),
@@ -65,53 +68,38 @@ export default function AssessmentPanel({ assessment, onEdit, onAddComment, onDe
 
       {onAddComment && (
         <div className="mt-4">
-          <p className="mb-2 text-xs font-semibold text-neutral-500">Discussion</p>
+          <p className="mb-3 text-xs font-semibold text-neutral-500">
+            Discussion
+            {(assessment.comments || []).length > 0 && (
+              <span className="ml-1.5 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] text-neutral-500">
+                {assessment.comments.length}
+              </span>
+            )}
+          </p>
 
-          {(assessment.comments || []).length > 0 && (
-            <div className="mb-3 flex flex-col gap-2">
-              {assessment.comments.map((c) => {
-                const canDeleteComment = onDeleteComment && canManage && c.author === profile?.name;
-                return (
-                  <div key={c.id} className="rounded-lg bg-neutral-50 px-3 py-2">
-                    <p className="flex items-baseline justify-between gap-2">
-                      <span className="text-xs font-semibold text-neutral-700">{c.author}</span>
-                      <span className="flex shrink-0 items-center gap-2">
-                        <span className="whitespace-nowrap text-[11px] text-neutral-400">{c.date}</span>
-                        {canDeleteComment && (
-                          <button
-                            type="button"
-                            onClick={() => onDeleteComment(c.id)}
-                            aria-label="Delete comment"
-                            className="-m-1.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full
-                                       text-neutral-400 transition hover:bg-rose-50 hover:text-rose-600"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </span>
-                    </p>
-                    <p className="mt-0.5 text-sm leading-relaxed text-neutral-800">{c.text}</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <CommentThread comments={assessment.comments} onDelete={onDeleteComment} />
 
-          {canManage && (
-            <form onSubmit={handleAddComment} className="flex gap-2">
-              <input
-                value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
-                placeholder="Add a reply..."
-                className="flex-1 rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-ink"
-              />
-              <button
-                type="submit"
-                aria-label="Post reply"
-                className="flex shrink-0 items-center justify-center rounded-lg bg-ink px-3 text-white transition hover:bg-neutral-700"
-              >
-                <Send size={15} />
-              </button>
+          {user && (
+            <form onSubmit={handleAddComment} className="flex items-center gap-2.5">
+              <Avatar name={profile?.name} src={profile?.image} size="sm" />
+              <div className="flex flex-1 items-center gap-1 rounded-full border border-neutral-200 bg-white py-1 pl-4 pr-1
+                              transition focus-within:border-ink focus-within:ring-2 focus-within:ring-lime/40">
+                <input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="min-w-0 flex-1 bg-transparent py-1 text-sm outline-none placeholder:text-neutral-400"
+                />
+                <button
+                  type="submit"
+                  aria-label="Post comment"
+                  disabled={!commentText.trim()}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-white
+                             transition hover:bg-neutral-700 disabled:bg-neutral-200 disabled:text-neutral-400"
+                >
+                  <Send size={14} />
+                </button>
+              </div>
             </form>
           )}
         </div>

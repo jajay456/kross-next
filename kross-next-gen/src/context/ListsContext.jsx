@@ -16,20 +16,11 @@ const DEFAULTS = {
 };
 
 export function ListsProvider({ children }) {
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const [lists, setLists] = useState(DEFAULTS);
 
+  // The lists config is publicly readable so guests see the same options.
   useEffect(() => {
-    if (!user) return;
-
-    const seedIfEmpty = async () => {
-      const snap = await getDoc(listsRef);
-      if (!snap.exists()) {
-        await setDoc(listsRef, DEFAULTS);
-      }
-    };
-    seedIfEmpty().catch((error) => console.error("Failed to seed lists config:", error));
-
     const unsubscribe = onSnapshot(
       listsRef,
       (snap) => {
@@ -38,7 +29,19 @@ export function ListsProvider({ children }) {
       (error) => console.error("Lists onSnapshot error:", error)
     );
     return unsubscribe;
-  }, [user]);
+  }, []);
+
+  // Only admins can write config, so only they can seed it.
+  useEffect(() => {
+    if (!isAdmin) return;
+    const seedIfEmpty = async () => {
+      const snap = await getDoc(listsRef);
+      if (!snap.exists()) {
+        await setDoc(listsRef, DEFAULTS);
+      }
+    };
+    seedIfEmpty().catch((error) => console.error("Failed to seed lists config:", error));
+  }, [isAdmin]);
 
   const addValue = async (field, value) => {
     const trimmed = value.trim();

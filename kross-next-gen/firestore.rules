@@ -22,12 +22,16 @@ service cloud.firestore {
     }
 
     match /players/{playerId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if canManage() || (isSignedIn() && resource.data.linkedUserId == request.auth.uid);
+      // Comments live inside the notes/assessmentHistory arrays, so any
+      // signed-in user may update those two fields (and nothing else).
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notes', 'assessmentHistory']);
     }
 
     match /config/{docId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
   }

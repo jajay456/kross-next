@@ -58,7 +58,14 @@ export default function PlayerProfile({
 
         <section className="grid grid-cols-1 items-start gap-4 @3xl:grid-cols-2">
           <div className="rounded-xl border border-neutral-200 p-5">
-            <AssessmentPanel assessment={player.assessmentHistory[0]} onEdit={onEditAssessment} />
+            {player.assessmentHistory?.[0] ? (
+              <AssessmentPanel assessment={player.assessmentHistory[0]} onEdit={onEditAssessment} />
+            ) : (
+              <>
+                <h2 className="mb-4 text-sm font-bold tracking-wide">LATEST ASSESSMENT</h2>
+                <p className="py-6 text-center text-sm text-neutral-400">No assessments yet</p>
+              </>
+            )}
           </div>
           <div className="rounded-xl border border-neutral-200 p-5">
             <ClassesPanel classes={player.recentClasses} onEdit={onEditClass} limit={4} />

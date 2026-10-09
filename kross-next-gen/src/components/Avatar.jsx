@@ -1,4 +1,5 @@
 const SIZES = {
+  xs: "h-7 w-7 text-[10px]",
   sm: "h-8 w-8 text-xs",
   md: "h-11 w-11 text-sm",
   lg: "h-16 w-16 text-lg",

@@ -12,20 +12,28 @@ const makeInitialForm = (levels, classes) => ({
   name: "",
   level: levels[0],
   class: classes[0],
-  coach: COACHES[0],
+  coach: "",
   image: "",
 });
 
-export default function AddPlayerModal({ open, initialData, onClose, onSubmit }) {
+// `standalone` manages the player record on its own, without any user-account
+// linking (used by the Manage Players page).
+export default function AddPlayerModal({ open, initialData, onClose, onSubmit, standalone = false }) {
   const { isAdmin, canManage } = useAuth();
   const { levels, classes } = useLists();
-  const [form, setForm] = useState(initialData ?? (() => makeInitialForm(levels, classes)));
+  // Imported players can have an empty level/class — fall back to the lowest
+  // option so the select matches what gets saved.
+  const [form, setForm] = useState(() =>
+    initialData
+      ? { ...initialData, level: initialData.level || levels[0], class: initialData.class || classes[0] }
+      : makeInitialForm(levels, classes)
+  );
   const isEditing = Boolean(initialData);
-  const restrictedEdit = isEditing && !isAdmin;
+  const restrictedEdit = isEditing && !isAdmin && !standalone;
   // Linking a user account changes their role, which requires admin rights once
   // a player already exists (edit mode) — but any coach can link when creating a
   // brand new player, since the role change there is just "user" -> "player".
-  const canUseLinker = isAdmin || (canManage && !isEditing);
+  const canUseLinker = !standalone && (isAdmin || (canManage && !isEditing));
   const fileInputRef = useRef(null);
 
   const [coachNames, setCoachNames] = useState([]);
@@ -36,7 +44,11 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
     });
     return unsubscribe;
   }, []);
-  const coachOptions = coachNames.length ? coachNames : COACHES;
+  // Keep the player's current coach selectable even if they're no longer a
+  // coach/admin user (e.g. imported or legacy names).
+  const baseCoachOptions = coachNames.length ? coachNames : COACHES;
+  const coachOptions =
+    form.coach && !baseCoachOptions.includes(form.coach) ? [form.coach, ...baseCoachOptions] : baseCoachOptions;
 
   const [candidateUsers, setCandidateUsers] = useState([]);
   useEffect(() => {
@@ -107,17 +119,20 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
     e.preventDefault();
     if (!form.name.trim()) return;
     onSubmit(form);
-    setForm(makeInitialForm(levels, classes));
-    setUserSearch("");
+    // Edit mode keeps the saved values so reopening shows them again.
+    if (!isEditing) {
+      setForm(makeInitialForm(levels, classes));
+      setUserSearch("");
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
 
       <form
         onSubmit={handleSubmit}
-        className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        className="relative z-10 animate-pop-in w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
       >
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-bold tracking-tight">
@@ -269,10 +284,14 @@ export default function AddPlayerModal({ open, initialData, onClose, onSubmit })
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-semibold text-neutral-500">Coach</span>
               <select
-                value={form.coach}
+                value={form.coach || ""}
                 onChange={update("coach")}
+                required
                 className="rounded-lg border border-neutral-300 px-2 py-2 text-sm outline-none focus:border-ink"
               >
+                {!form.coach && (
+                  <option value="" disabled>Select coach</option>
+                )}
                 {coachOptions.map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}

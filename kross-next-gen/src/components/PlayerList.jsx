@@ -2,17 +2,28 @@ import { useState } from "react";
 import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Avatar from "./Avatar";
 import Badge from "./ui/Badge";
+import FilterSelect from "./ui/FilterSelect";
 import { useAuth } from "../context/AuthContext";
+import { useLists } from "../context/ListsContext";
+import useCoachNames from "../hooks/useCoachNames";
 
 const PAGE_SIZE = 9;
 
 export default function PlayerList({ players, selectedId, onSelect, onAdd }) {
   const { canManage } = useAuth();
   const [query, setQuery] = useState("");
+  const [filters, setFilters] = useState({ level: "", class: "", coach: "" });
   const [page, setPage] = useState(1);
+  const { levels, classes } = useLists();
+  const coaches = useCoachNames();
 
-  const filtered = players.filter((p) =>
-    p.name.toLowerCase().includes(query.trim().toLowerCase())
+  const q = query.trim().toLowerCase();
+  const filtered = players.filter(
+    (p) =>
+      (p.name?.toLowerCase().includes(q) || p.coach?.toLowerCase().includes(q)) &&
+      (!filters.level || p.level === filters.level) &&
+      (!filters.class || p.class === filters.class) &&
+      (!filters.coach || p.coach === filters.coach)
   );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -24,6 +35,11 @@ export default function PlayerList({ players, selectedId, onSelect, onAdd }) {
 
   const handleSearch = (value) => {
     setQuery(value);
+    setPage(1);
+  };
+
+  const handleFilter = (key, value) => {
+    setFilters((f) => ({ ...f, [key]: value }));
     setPage(1);
   };
 
@@ -51,9 +67,14 @@ export default function PlayerList({ players, selectedId, onSelect, onAdd }) {
           <input
             value={query}
             onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Search players"
+            placeholder="Search by name or coach"
             className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-400"
           />
+        </div>
+        <div className="mt-2 flex gap-2">
+          <FilterSelect label="Levels" value={filters.level} options={levels} onChange={(v) => handleFilter("level", v)} />
+          <FilterSelect label="Classes" value={filters.class} options={classes} onChange={(v) => handleFilter("class", v)} />
+          <FilterSelect label="Coaches" value={filters.coach} options={coaches} onChange={(v) => handleFilter("coach", v)} />
         </div>
       </div>
 

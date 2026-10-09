@@ -10,6 +10,7 @@ import Classes from './pages/Classes'
 import Notes from './pages/Notes'
 import Admin from './pages/Admin'
 import ManageOptions from './pages/ManageOptions'
+import ManagePlayers from './pages/ManagePlayers'
 import Profile from './pages/Profile'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -24,29 +25,15 @@ import ResetPassword from './pages/ResetPassword'
   });
 
 function App() {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading, isAdmin, canManage } = useAuth();
   const [players, setPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Players are publicly readable, so guests can browse without logging in.
   useEffect(() => {
-    if (!user) {
-      setPlayers([]);
-      setLoading(true);
-      return;
-    }
-    const playersRef = collection(db, 'players');
-
-    const seedIfEmpty = async () => {
-      const snap = await getDocs(playersRef);
-      if (snap.empty) {
-        await Promise.all(PLAYERS.map((p) => setDoc(doc(db, 'players', p.id), p)));
-      }
-    };
-    seedIfEmpty().catch((error) => console.error("Firestore seed error:", error));
-
     const unsubscribe = onSnapshot(
-      playersRef,
+      collection(db, 'players'),
       (snapshot) => {
         setPlayers(snapshot.docs.map((d) => d.data()));
         setLoading(false);
@@ -58,7 +45,20 @@ function App() {
     );
 
     return unsubscribe;
-  }, [user]);
+  }, []);
+
+  // Only coaches/admins are allowed to write, so only they can seed.
+  useEffect(() => {
+    if (!canManage) return;
+    const playersRef = collection(db, 'players');
+    const seedIfEmpty = async () => {
+      const snap = await getDocs(playersRef);
+      if (snap.empty) {
+        await Promise.all(PLAYERS.map((p) => setDoc(doc(db, 'players', p.id), p)));
+      }
+    };
+    seedIfEmpty().catch((error) => console.error("Firestore seed error:", error));
+  }, [canManage]);
 
   const playerRef = (id) => doc(db, 'players', id);
 
@@ -83,7 +83,7 @@ function App() {
     }
   };
 
-  const addPlayer = async (data) => {
+  const addPlayer = async (data, { openProfile = true } = {}) => {
     const { userId, userRole, ...playerData } = data;
     const newPlayer = {
       ...playerData,
@@ -96,7 +96,7 @@ function App() {
     };
     await setDoc(playerRef(newPlayer.id), newPlayer);
     await promoteLinkedUserIfPlain(userId, userRole);
-    navigate(`/players/${newPlayer.id}`);
+    if (openProfile) navigate(`/players/${newPlayer.id}`);
   };
 
   const addAssessment = async (playerId, data) => {
@@ -286,18 +286,6 @@ function App() {
     );
   }
 
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
-    );
-  }
-
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-ink text-sm text-neutral-400">
@@ -310,9 +298,9 @@ function App() {
     <>
       <Routes>
         <Route path="/" element={<Navigate to="/players" replace />} />
-        <Route path="/login" element={<Navigate to="/players" replace />} />
-        <Route path="/register" element={<Navigate to="/players" replace />} />
-        <Route path="/forgot-password" element={<Navigate to="/players" replace />} />
+        <Route path="/login" element={user ? <Navigate to="/players" replace /> : <Login />} />
+        <Route path="/register" element={user ? <Navigate to="/players" replace /> : <Register />} />
+        <Route path="/forgot-password" element={user ? <Navigate to="/players" replace /> : <ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/players" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onDeletePlayer={deletePlayer} onEditPlan={editPlan} onAddAssessment={addAssessment} onEditAssessment={editAssessment} onDeleteAssessment={deleteAssessment} onAddClass={addClass} onEditClass={editClass} onDeleteClass={deleteClass} onAddNote={addNote} onEditNote={editNote} onDeleteNote={deleteNote} />} />
         <Route path="/players/:id" element={<Players players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onDeletePlayer={deletePlayer} onEditPlan={editPlan} onAddAssessment={addAssessment} onEditAssessment={editAssessment} onDeleteAssessment={deleteAssessment} onAddClass={addClass} onEditClass={editClass} onDeleteClass={deleteClass} onAddNote={addNote} onEditNote={editNote} onDeleteNote={deleteNote} />} />
@@ -323,8 +311,9 @@ function App() {
         <Route path="/notes" element={<Notes players={players} onEditNote={editNote} onDeleteNote={deleteNote} onAddNoteComment={addNoteComment} onDeleteNoteComment={deleteNoteComment} />} />
         <Route path="/notes/:id" element={<Notes players={players} onEditNote={editNote} onDeleteNote={deleteNote} onAddNoteComment={addNoteComment} onDeleteNoteComment={deleteNoteComment} />} />
         <Route path="/admin" element={isAdmin ? <Admin /> : <Navigate to="/players" replace />} />
+        <Route path="/manage-players" element={<ManagePlayers players={players} onAddPlayer={addPlayer} onEditPlayer={editPlayer} onDeletePlayer={deletePlayer} />} />
         <Route path="/settings" element={isAdmin ? <ManageOptions /> : <Navigate to="/players" replace />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/players" replace />} />
       </Routes>
     </>

@@ -6,13 +6,17 @@ import { db } from "../firebase";
 import AppLayout from "../layouts/AppLayout";
 import Sidebar from "../components/Sidebar";
 import Avatar from "../components/Avatar";
+import FilterSelect from "../components/ui/FilterSelect";
 import { useAuth } from "../context/AuthContext";
+import { useConfirm } from "../context/ConfirmContext";
 import { ROLES } from "../data/users";
 
 export default function Admin() {
   const { user, isAdmin } = useAuth();
   const [staff, setStaff] = useState([]);
   const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const confirm = useConfirm();
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -30,13 +34,16 @@ export default function Admin() {
 
   const q = query.trim().toLowerCase();
   const filteredStaff = staff.filter(
-    (u) => u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)
+    (u) =>
+      (u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q)) &&
+      (!roleFilter || u.role === roleFilter)
   );
 
-  const updateRole = (staffMember, role) => {
+  const updateRole = async (staffMember, role) => {
     if (role === staffMember.role) return;
-    const confirmed = window.confirm(
-      `Change ${staffMember.name}'s role from "${staffMember.role}" to "${role}"?`
+    const confirmed = await confirm(
+      `Change ${staffMember.name}'s role from "${staffMember.role}" to "${role}"?`,
+      { confirmLabel: "Change role" }
     );
     if (!confirmed) return;
     updateDoc(doc(db, "users", staffMember.id), { role }).catch((error) =>
@@ -44,8 +51,8 @@ export default function Admin() {
     );
   };
 
-  const removeUser = (staffMember) => {
-    const confirmed = window.confirm(
+  const removeUser = async (staffMember) => {
+    const confirmed = await confirm(
       `Remove ${staffMember.name} from the academy? They will lose access and their profile data will be deleted. This cannot be undone.`
     );
     if (!confirmed) return;
@@ -77,6 +84,9 @@ export default function Admin() {
                 placeholder="Search by name or email"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-neutral-400"
               />
+            </div>
+            <div className="mt-2 flex sm:max-w-xs">
+              <FilterSelect label="Roles" value={roleFilter} options={ROLES} onChange={setRoleFilter} />
             </div>
           </div>
 

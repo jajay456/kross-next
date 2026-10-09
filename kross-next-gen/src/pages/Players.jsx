@@ -4,6 +4,7 @@ import AppLayout from "../layouts/AppLayout";
 import Sidebar from "../components/Sidebar";
 import PlayerList from "../components/PlayerList";
 import PlayerProfile from "../components/profile/PlayerProfile";
+import PlayerHero from "../components/PlayerHero";
 import AddPlayerModal from "../components/AddPlayerModal";
 import AddUpdateModal from "../components/AddUpdateModal";
 import EditPlanModal from "../components/EditPlanModal";
@@ -34,22 +35,26 @@ export default function Players({ players, onAddPlayer, onEditPlayer, onDeletePl
           />
         }
         detail={
-          <PlayerProfile
-            player={selected}
-            onBack={() => navigate("/players")}
-            onEdit={() => setEditingPlayer(true)}
-            onDelete={() => {
-              onDeletePlayer(selected.id);
-              navigate("/players");
-            }}
-            onEditPlan={() => setEditingPlan(true)}
-            onAddUpdate={() => setAddingUpdate("assessment")}
-            onAddAssessment={() => setAddingUpdate("assessment")}
-            onEditAssessment={(a) => setEditingEntry({ type: "assessment", data: a })}
-            onAddClass={() => setAddingUpdate("class")}
-            onEditClass={(c) => setEditingEntry({ type: "class", data: c })}
-            onAddNote={() => setAddingUpdate("note")}
-          />
+          selected ? (
+            <PlayerProfile
+              player={selected}
+              onBack={() => navigate("/players")}
+              onEdit={() => setEditingPlayer(true)}
+              onDelete={() => {
+                onDeletePlayer(selected.id);
+                navigate("/players");
+              }}
+              onEditPlan={() => setEditingPlan(true)}
+              onAddUpdate={() => setAddingUpdate("assessment")}
+              onAddAssessment={() => setAddingUpdate("assessment")}
+              onEditAssessment={(a) => setEditingEntry({ type: "assessment", data: a })}
+              onAddClass={() => setAddingUpdate("class")}
+              onEditClass={(c) => setEditingEntry({ type: "class", data: c })}
+              onAddNote={() => setAddingUpdate("note")}
+            />
+          ) : (
+            <PlayerHero players={players} onSelect={(pid) => navigate(`/players/${pid}`)} />
+          )
         }
       />
 

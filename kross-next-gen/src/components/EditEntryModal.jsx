@@ -2,6 +2,7 @@ import { useState } from "react";
 import { X, Trash2 } from "lucide-react";
 import { ASSESSMENT_FIELDS } from "../data/players";
 import { useLists } from "../context/ListsContext";
+import { useConfirm } from "../context/ConfirmContext";
 
 const TITLES = {
   assessment: "Edit Assessment",
@@ -17,6 +18,7 @@ const CONFIRM_MESSAGES = {
 
 export default function EditEntryModal({ open, type, initialData, onClose, onSave, onDelete }) {
   const { classTypes } = useLists();
+  const confirm = useConfirm();
   const [form, setForm] = useState(initialData || {});
 
   if (!open || !initialData) return null;
@@ -27,19 +29,19 @@ export default function EditEntryModal({ open, type, initialData, onClose, onSav
     onClose();
   };
 
-  const handleDelete = () => {
-    if (!window.confirm(CONFIRM_MESSAGES[type])) return;
+  const handleDelete = async () => {
+    if (!(await confirm(CONFIRM_MESSAGES[type]))) return;
     onDelete(initialData.id);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50 animate-fade-in" onClick={onClose} />
 
       <form
         onSubmit={handleSubmit}
-        className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
+        className="relative z-10 animate-pop-in flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl"
       >
         <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-5">
           <div>
