@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import logoMark from "../assets/logo-mark.png";
 
@@ -82,6 +83,21 @@ export default function Login() {
             {submitting ? "Logging in..." : "Log In"}
           </button>
         </form>
+
+        <div className="my-5 flex items-center gap-3 text-[11px] uppercase tracking-widest text-neutral-600">
+          <span className="h-px flex-1 bg-neutral-800" />
+          or
+          <span className="h-px flex-1 bg-neutral-800" />
+        </div>
+
+        <Link
+          to="/players"
+          className="flex items-center justify-center gap-2 rounded-xl border border-neutral-700 py-3 text-sm
+                     font-semibold text-neutral-200 transition hover:border-lime hover:text-lime active:scale-[0.98]"
+        >
+          <Eye size={16} />
+          Continue as Guest
+        </Link>
 
         <p className="mt-6 text-center text-xs text-neutral-500">
           Don't have an account?{" "}

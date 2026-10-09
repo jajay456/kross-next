@@ -45,7 +45,9 @@ function App() {
     );
 
     return unsubscribe;
-  }, []);
+    // A failed listener (e.g. permission denied) never retries, so resubscribe
+    // whenever the signed-in user changes.
+  }, [user?.uid]);
 
   // Only coaches/admins are allowed to write, so only they can seed.
   useEffect(() => {

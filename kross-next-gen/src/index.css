@@ -74,6 +74,10 @@ body {
 .hero-stage {
   container-type: inline-size;
   perspective: 120cqw;
+  /* Own composited surface, so the app frame's rounded-corner clip applies to
+     one flattened layer instead of every moving 3D card. */
+  will-change: transform;
+  contain: layout paint;
 }
 .hero-scene {
   transform-style: preserve-3d;
@@ -115,6 +119,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: inherit;
   background: rgb(0 0 0 / 0.65);
 }
 .hero-title {
