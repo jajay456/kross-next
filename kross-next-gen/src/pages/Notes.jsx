@@ -1,4 +1,5 @@
 import { useState } from "react";
+import usePlayerComments from "../hooks/usePlayerComments";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import AppLayout from "../layouts/AppLayout";
@@ -13,6 +14,7 @@ export default function Notes({ players, onEditNote, onDeleteNote, onAddNoteComm
   const [editing, setEditing] = useState(null);
 
   const selected = players.find((p) => p.id === id) ?? null;
+  const comments = usePlayerComments(selected?.id);
 
   const allNotes = players
     .flatMap((p) =>
@@ -54,7 +56,7 @@ export default function Notes({ players, onEditNote, onDeleteNote, onAddNoteComm
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-7">
               <NotesPanel
-                notes={selected.notes}
+                notes={(selected.notes || []).map((e) => ({ ...e, comments: comments[e.id] || [] }))}
                 onEdit={(n) => setEditing(n)}
                 onAddComment={(noteId, data) => onAddNoteComment(selected.id, noteId, data)}
                 onDeleteComment={(noteId, commentId) =>

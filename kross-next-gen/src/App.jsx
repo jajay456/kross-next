@@ -1,6 +1,6 @@
 import { Route, Routes, Navigate, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore'
 import { db } from './firebase'
 import { useAuth } from './context/AuthContext'
 import Players from './pages/Players'
@@ -61,6 +61,23 @@ function App() {
   }, [canManage]);
 
   const playerRef = (id) => doc(db, 'players', id);
+  const commentsRef = (playerId) => collection(db, 'players', playerId, 'comments');
+
+  // Comments are separate docs so rules can restrict them to their author.
+  const addComment = async (playerId, parentId, data) => {
+    await addDoc(commentsRef(playerId), { ...data, parentId, createdAt: serverTimestamp() });
+  };
+
+  const deleteComment = async (playerId, commentId) => {
+    await deleteDoc(doc(db, 'players', playerId, 'comments', commentId));
+  };
+
+  // Removes the comments under one note/assessment, or all of a player's.
+  const deleteCommentsFor = async (playerId, parentId) => {
+    const q = parentId ? query(commentsRef(playerId), where('parentId', '==', parentId)) : commentsRef(playerId);
+    const snap = await getDocs(q);
+    await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+  };
 
   // Linking a player never demotes an existing coach/admin — only a plain
   // "user" account gets promoted to "player". Reverting only resets the role
@@ -131,11 +148,12 @@ function App() {
 
   const deletePlayer = async (playerId) => {
     const player = players.find((p) => p.id === playerId);
+    await deleteCommentsFor(playerId);
     await deleteDoc(playerRef(playerId));
     await revertLinkedUserRoleIfPlayer(player?.linkedUserId);
   };
 
-  const editAssessment = async (playerId, data) => {
+  const editAssessment = async (playerId, { comments: _comments, ...data }) => {
     const player = players.find((p) => p.id === playerId);
     if (!player) return;
     await updateDoc(playerRef(playerId), {
@@ -145,35 +163,9 @@ function App() {
     });
   };
 
-  const addAssessmentComment = async (playerId, assessmentId, data) => {
-    const player = players.find((p) => p.id === playerId);
-    if (!player) return;
-    await updateDoc(playerRef(playerId), {
-      assessmentHistory: player.assessmentHistory.map((a) =>
-        a.id === assessmentId
-          ? {
-              ...a,
-              comments: [
-                ...(a.comments || []),
-                { id: `comment_${crypto.randomUUID().slice(0, 8)}`, ...data },
-              ],
-            }
-          : a
-      ),
-    });
-  };
+  const addAssessmentComment = (playerId, assessmentId, data) => addComment(playerId, assessmentId, data);
 
-  const deleteAssessmentComment = async (playerId, assessmentId, commentId) => {
-    const player = players.find((p) => p.id === playerId);
-    if (!player) return;
-    await updateDoc(playerRef(playerId), {
-      assessmentHistory: player.assessmentHistory.map((a) =>
-        a.id === assessmentId
-          ? { ...a, comments: (a.comments || []).filter((c) => c.id !== commentId) }
-          : a
-      ),
-    });
-  };
+  const deleteAssessmentComment = (playerId, _assessmentId, commentId) => deleteComment(playerId, commentId);
 
   const deleteAssessment = async (playerId, assessmentId) => {
     const player = players.find((p) => p.id === playerId);
@@ -181,6 +173,7 @@ function App() {
     await updateDoc(playerRef(playerId), {
       assessmentHistory: player.assessmentHistory.filter((a) => a.id !== assessmentId),
     });
+    await deleteCommentsFor(playerId, assessmentId);
   };
 
   const editPlan = async (playerId, data) => {
@@ -232,7 +225,7 @@ function App() {
     });
   };
 
-  const editNote = async (playerId, data) => {
+  const editNote = async (playerId, { comments: _comments, ...data }) => {
     const player = players.find((p) => p.id === playerId);
     if (!player) return;
     await updateDoc(playerRef(playerId), {
@@ -246,37 +239,12 @@ function App() {
     await updateDoc(playerRef(playerId), {
       notes: player.notes.filter((n) => n.id !== noteId),
     });
+    await deleteCommentsFor(playerId, noteId);
   };
 
-  const addNoteComment = async (playerId, noteId, data) => {
-    const player = players.find((p) => p.id === playerId);
-    if (!player) return;
-    await updateDoc(playerRef(playerId), {
-      notes: player.notes.map((n) =>
-        n.id === noteId
-          ? {
-              ...n,
-              comments: [
-                ...(n.comments || []),
-                { id: `comment_${crypto.randomUUID().slice(0, 8)}`, ...data },
-              ],
-            }
-          : n
-      ),
-    });
-  };
+  const addNoteComment = (playerId, noteId, data) => addComment(playerId, noteId, data);
 
-  const deleteNoteComment = async (playerId, noteId, commentId) => {
-    const player = players.find((p) => p.id === playerId);
-    if (!player) return;
-    await updateDoc(playerRef(playerId), {
-      notes: player.notes.map((n) =>
-        n.id === noteId
-          ? { ...n, comments: (n.comments || []).filter((c) => c.id !== commentId) }
-          : n
-      ),
-    });
-  };
+  const deleteNoteComment = (playerId, _noteId, commentId) => deleteComment(playerId, commentId);
 
   if (authLoading) {
     return (

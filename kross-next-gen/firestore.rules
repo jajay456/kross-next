@@ -22,12 +22,26 @@ service cloud.firestore {
     }
 
     match /players/{playerId} {
+      // Public so guests can browse players without logging in.
       allow read: if true;
       allow write: if canManage() || (isSignedIn() && resource.data.linkedUserId == request.auth.uid);
-      // Comments live inside the notes/assessmentHistory arrays, so any
-      // signed-in user may update those two fields (and nothing else).
-      allow update: if isSignedIn()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notes', 'assessmentHistory']);
+
+      // One doc per comment so each can be tied to its author. Anyone signed
+      // in may post as themselves; only the author or a coach/admin may delete.
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.keys().hasOnly(['authorId', 'author', 'text', 'date', 'parentId', 'createdAt'])
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000
+          && request.resource.data.parentId is string
+          && request.resource.data.createdAt == request.time
+          && exists(/databases/$(database)/documents/players/$(playerId));
+        allow delete: if isSignedIn()
+          && (resource.data.authorId == request.auth.uid || canManage());
+      }
     }
 
     match /config/{docId} {
